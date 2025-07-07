@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Empréstimo Rápido</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --accent-blue: #007bff;
+            --accent-orange: #fd7e14;
+            --accent-gray: #6c757d;
+            --accent-green: #28a745;
+            --accent-red: #dc3545;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --text-primary: #ffffff;
+            --text-secondary: #adb5bd;
+            --border-color: #495057;
+            --shadow: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 2px 10px var(--shadow);
+        }
+
+        .header h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .theme-toggle {
+            background: none;
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background-color: var(--bg-primary);
+            transform: scale(1.1);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 1rem 100px;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background-color: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        /* Steps */
+        .step {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .step-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            color: var(--text-primary);
+        }
+
+        .step-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+        /* Value Selection */
+        .value-display {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .current-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-green);
+            margin-bottom: 0.5rem;
+        }
+
+        .value-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .value-btn {
+            padding: 1rem;
+            border: 2px solid var(--accent-green);
+            border-radius: 8px;
+            background-color: transparent;
+            color: var(--accent-green);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .value-btn:hover {
+            background-color: var(--accent-green);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .value-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Simulation */
+        .simulation-list {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+        }
+
+        .simulation-item {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .simulation-item:hover {
+            box-shadow: 0 4px 12px var(--shadow);
+            transform: translateY(-2px);
+        }
+
+        .simulation-date {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .simulation-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .simulation-days {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .simulation-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+
+        .select-btn {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .select-btn:hover {
+            background-color: #0056b3;
+            transform: translateY(-1px);
+        }
+
+        /* Contract */
+        .contract-content {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .contract-title {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            cursor: pointer;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 0.75rem;
+            transform: scale(1.2);
+        }
+
+        .checkbox-group label {
+            cursor: pointer;
+            color: var(--text-primary);
+        }
+
+        /* Footer Navigation */
+        .footer-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+            padding: 1rem;
+            display: flex;
+            gap: 1rem;
+            z-index: 1000;
+            box-shadow: 0 -2px 10px var(--shadow);
+        }
+
+        .nav-btn {
+            flex: 1;
+            padding: 1rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 50px;
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .nav-btn.back {
+            background-color: var(--accent-gray);
+            color: white;
+        }
+
+        .nav-btn.back:hover:not(:disabled) {
+            background-color: #5a6268;
+        }
+
+        .nav-btn.recalc {
+            background-color: var(--accent-orange);
+            color: white;
+        }
+
+        .nav-btn.recalc:hover:not(:disabled) {
+            background-color: #e8590c;
+        }
+
+        .nav-btn.next {
+            background-color: var(--accent-blue);
+            color: white;
+        }
+
+        .nav-btn.next:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .container {
+                margin: 0 0.5rem;
+                padding: 1.5rem;
+            }
+
+            .header h1 {
+                font-size: 1rem;
+            }
+
+            .step-title {
+                font-size: 1.3rem;
+            }
+
+            .current-value {
+                font-size: 1.8rem;
+            }
+
+            .value-buttons {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-nav {
+                padding: 0.75rem;
+            }
+
+            .nav-btn {
+                padding: 0.75rem;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Utilities */
+        .text-center {
+            text-align: center;
+        }
+
+        .mb-1 {
+            margin-bottom: 1rem;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <h1>💰 Simulador de Empréstimo</h1>
+        <button class="theme-toggle" onclick="toggleTheme()">
+            <span id="theme-icon">🌞</span>
+        </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Step 1: Personal Info -->
+            <div class="step active" id="step1">
+                <h2 class="step-title">Dados Pessoais</h2>
+                <p class="step-subtitle">Informe seus dados para continuar</p>
+                
+                <div class="form-group">
+                    <label class="form-label" for="fullName">Nome Completo</label>
+                    <input type="text" id="fullName" class="form-input" placeholder="Digite seu nome completo">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="cpf">CPF</label>
+                    <input type="text" id="cpf" class="form-input" placeholder="000.000.000-00" maxlength="14">
+                </div>
+            </div>
+
+            <!-- Step 2: Value Selection -->
+            <div class="step" id="step2">
+                <h2 class="step-title">Valor do Empréstimo</h2>
+                <p class="step-subtitle">Toque nos valores para adicionar</p>
+                
+                <div class="value-display">
+                    <div class="current-value" id="currentValue">R$ 0,00</div>
+                </div>
+                
+                <div class="value-buttons">
+                    <button class="value-btn" onclick="addValue(50)">+ R$ 50,00</button>
+                    <button class="value-btn" onclick="addValue(100)">+ R$ 100,00</button>
+                    <button class="value-btn" onclick="addValue(200)">+ R$ 200,00</button>
+                    <button class="value-btn" onclick="addValue(300)">+ R$ 300,00</button>
+                    <button class="value-btn" onclick="addValue(500)">+ R$ 500,00</button>
+                    <button class="value-btn" onclick="resetValue()">🔄 Zerar</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Simulation -->
+            <div class="step" id="step3">
+                <h2 class="step-title">Simulação de Pagamento</h2>
+                <p class="step-subtitle">Escolha a melhor opção para você</p>
+                
+                <div class="simulation-list" id="simulationList">
+                    <!-- Simulation items will be generated here -->
+                </div>
+            </div>
+
+            <!-- Step 4: Contract -->
+            <div class="step" id="step4">
+                <h2 class="step-title">Contrato de Empréstimo</h2>
+                <p class="step-subtitle">Leia e aceite os termos</p>
+                
+                <div class="contract-content">
+                    <div class="contract-title">CONTRATO DE EMPRÉSTIMO PESSOAL</div>
+                    
+                    <p><strong>CREDOR:</strong> Edney Cunha da Silva</p>
+                    <p><strong>CPF:</strong> 065.932.739-29</p>
+                    <br>
+                    
+                    <p><strong>DEVEDOR:</strong> <span id="contractName"></span></p>
+                    <p><strong>CPF:</strong> <span id="contractCpf"></span></p>
+                    <br>
+                    
+                    <p><strong>VALOR EMPRESTADO:</strong> <span id="contractValue"></span></p>
+                    <p><strong>VALOR A PAGAR:</strong> <span id="contractTotal"></span></p>
+                    <p><strong>DATA DE VENCIMENTO:</strong> <span id="contractDate"></span></p>
+                    <br>
+                    
+                    <p><strong>CLÁUSULAS:</strong></p>
+                    <p>1. O devedor se compromete a pagar o valor total na data de vencimento.</p>
+                    <p>2. Em caso de atraso, será aplicada multa de 20% sobre o valor devido.</p>
+                    <p>3. Juros de mora de 10% ao mês sobre o saldo devedor em caso de inadimplência.</p>
+                    <p>4. O não pagamento na data acordada resultará em protesto e negativação do nome do devedor.</p>
+                    <p>5. Este contrato é regido pelas leis brasileiras.</p>
+                </div>
+                
+                <div class="checkbox-group">
+                    <input type="checkbox" id="acceptTerms">
+                    <label for="acceptTerms">Li e aceito todos os termos do contrato</label>
+                </div>
+                
+                <button class="nav-btn next" id="sendWhatsApp" onclick="sendToWhatsApp()" disabled>
+                    📱 Enviar Proposta via WhatsApp
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer Navigation -->
+    <footer class="footer-nav">
+        <button class="nav-btn back" onclick="previousStep()" id="backBtn" disabled>
+            ← Voltar
+        </button>
+        <button class="nav-btn recalc" onclick="recalculate()" id="recalcBtn">
+            🔄 Recalcular
+        </button>
+        <button class="nav-btn next" onclick="nextStep()" id="nextBtn">
+            Avançar →
+        </button>
+    </footer>
+
+    <script>
+        // Global variables
+        let currentStep = 1;
+        let currentValue = 0;
+        let selectedOption = null;
+        let userData = {
+            name: '',
+            cpf: '',
+            loanValue: 0,
+            totalValue: 0,
+            dueDate: '',
+            selectedDay: 0
+        };
+
+        // Theme management
+        function toggleTheme() {
+            const body = document.body;
+            const themeIcon = document.getElementById('theme-icon');
+            
+            if (body.getAttribute('data-theme') === 'dark') {
+                body.removeAttribute('data-theme');
+                themeIcon.textContent = '🌞';
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                themeIcon.textContent = '🌙';
+            }
+        }
+
+        // CPF mask
+        document.getElementById('cpf').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            value = value.replace(/(\d{3})(\d)/, '$1.$2');
+            value = value.replace(/(\d{3})(\d)/, '$1.$2');
+            value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+            e.target.value = value;
+        });
+
+        // Value formatting
+        function formatCurrency(value) {
+            return new Intl.NumberFormat('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            }).format(value);
+        }
+
+        // Add value function
+        function addValue(amount) {
+            currentValue += amount;
+            document.getElementById('currentValue').textContent = formatCurrency(currentValue);
+            updateNavigationButtons();
+        }
+
+        // Reset value function
+        function resetValue() {
+            currentValue = 0;
+            document.getElementById('currentValue').textContent = formatCurrency(currentValue);
+            updateNavigationButtons();
+        }
+
+        // Calculate interest rate for a given day
+        function calculateInterestRate(day) {
+            // Interest rate increases linearly from 15% to 100% over 30 days
+            return 15 + (85 * (day - 1) / 29);
+        }
+
+        // Generate simulation
+        function generateSimulation() {
+            const simulationList = document.getElementById('simulationList');
+            simulationList.innerHTML = '';
+            
+            const today = new Date();
+            
+            // Generate options for all 30 days
+            for (let day = 1; day <= 30; day++) {
+                const dueDate = new Date(today);
+                dueDate.setDate(today.getDate() + day);
+                
+                const interestRate = calculateInterestRate(day);
+                const totalValue = currentValue + (currentValue * interestRate / 100);
+                
+                const item = document.createElement('div');
+                item.className = 'simulation-item';
+                item.innerHTML = `
+                    <div class="simulation-date">
+                        📅 ${dueDate.toLocaleDateString('pt-BR')}
+                    </div>
+                    <div class="simulation-details">
+                        <span class="simulation-days">📊 ${day} dias</span>
+                        <span class="simulation-value">${formatCurrency(totalValue)}</span>
+                    </div>
+                    <button class="select-btn" onclick="selectOption(${day}, ${totalValue}, '${dueDate.toLocaleDateString('pt-BR')}')">
+                        Selecionar e Enviar
+                    </button>
+                `;
+                
+                simulationList.appendChild(item);
+            }
+        }
+
+        // Select option
+        function selectOption(days, total, dateStr) {
+            selectedOption = {
+                days: days,
+                total: total,
+                date: dateStr
+            };
+            
+            userData.selectedDay = days;
+            userData.totalValue = total;
+            userData.dueDate = dateStr;
+            
+            nextStep();
+        }
+
+        // Update contract information
+        function updateContract() {
+            document.getElementById('contractName').textContent = userData.name;
+            document.getElementById('contractCpf').textContent = userData.cpf;
+            document.getElementById('contractValue').textContent = formatCurrency(userData.loanValue);
+            document.getElementById('contractTotal').textContent = formatCurrency(userData.totalValue);
+            document.getElementById('contractDate').textContent = userData.dueDate;
+        }
+
+        // Accept terms checkbox
+        document.getElementById('acceptTerms').addEventListener('change', function() {
+            document.getElementById('sendWhatsApp').disabled = !this.checked;
+        });
+
+        // Send to WhatsApp
+        function sendToWhatsApp() {
+            const message = `🏦 *PROPOSTA DE EMPRÉSTIMO*\n\n👤 *Cliente:* ${userData.name}\n📄 *CPF:* ${userData.cpf}\n\n💰 *Valor Solicitado:* ${formatCurrency(userData.loanValue)}\n💵 *Valor Total:* ${formatCurrency(userData.totalValue)}\n📅 *Vencimento:* ${userData.dueDate}\n⏰ *Prazo:* ${userData.selectedDay} dias\n\n✅ Cliente aceita os termos do contrato.\n\n_Enviado via Simulador de Empréstimo_`;
+
+            const phoneNumber = '5544998408460';
+            const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+            
+            window.open(whatsappUrl, '_blank');
+        }
+
+        // Navigation functions
+        function nextStep() {
+            if (!validateCurrentStep()) return;
+            
+            if (currentStep < 4) {
+                // Hide current step
+                document.getElementById(`step${currentStep}`).classList.remove('active');
+                
+                // Move to next step
+                currentStep++;
+                
+                // Show next step
+                document.getElementById(`step${currentStep}`).classList.add('active');
+                
+                // Special handling for step 3 (simulation)
+                if (currentStep === 3) {
+                    userData.loanValue = currentValue;
+                    generateSimulation();
+                }
+                
+                // Special handling for step 4 (contract)
+                if (currentStep === 4) {
+                    updateContract();
+                }
+                
+                updateNavigationButtons();
+            }
+        }
+
+        function previousStep() {
+            if (currentStep > 1) {
+                // Hide current step
+                document.getElementById(`step${currentStep}`).classList.remove('active');
+                
+                // Move to previous step
+                currentStep--;
+                
+                // Show previous step
+                document.getElementById(`step${currentStep}`).classList.add('active');
+                
+                updateNavigationButtons();
+            }
+        }
+
+        function recalculate() {
+            // Reset to step 1
+            document.getElementById(`step${currentStep}`).classList.remove('active');
+            currentStep = 1;
+            document.getElementById('step1').classList.add('active');
+            
+            // Reset values
+            currentValue = 0;
+            selectedOption = null;
+            document.getElementById('currentValue').textContent = formatCurrency(0);
+            document.getElementById('acceptTerms').checked = false;
+            document.getElementById('sendWhatsApp').disabled = true;
+            
+            updateNavigationButtons();
+        }
+
+        // Validate current step
+        function validateCurrentStep() {
+            switch (currentStep) {
+                case 1:
+                    const name = document.getElementById('fullName').value.trim();
+                    const cpf = document.getElementById('cpf').value.trim();
+                    
+                    if (!name || !cpf || cpf.length < 14) {
+                        alert('Por favor, preencha todos os campos corretamente.');
+                        return false;
+                    }
+                    
+                    userData.name = name;
+                    userData.cpf = cpf;
+                    return true;
+                    
+                case 2:
+                    if (currentValue <= 0) {
+                        alert('Por favor, selecione um valor para o empréstimo.');
+                        return false;
+                    }
+                    return true;
+                    
+                case 3:
+                    if (!selectedOption) {
+                        alert('Por favor, selecione uma opção de pagamento.');
+                        return false;
+                    }
+                    return true;
+                    
+                case 4:
+                    return true;
+                    
+                default:
+                    return true;
+            }
+        }
+
+        // Update navigation buttons
+        function updateNavigationButtons() {
+            const backBtn = document.getElementById('backBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            
+            // Back button
+            backBtn.disabled = currentStep === 1;
+            
+            // Next button
+            if (currentStep === 4) {
+                nextBtn.style.display = 'none';
+            } else {
+                nextBtn.style.display = 'block';
+                
+                // Enable/disable based on validation
+                switch (currentStep) {
+                    case 1:
+                        const name = document.getElementById('fullName').value.trim();
+                        const cpf = document.getElementById('cpf').value.trim();
+                        nextBtn.disabled = !name || !cpf || cpf.length < 14;
+                        break;
+                        
+                    case 2:
+                        nextBtn.disabled = currentValue <= 0;
+                        break;
+                        
+                    case 3:
+                        nextBtn.disabled = !selectedOption;
+                        break;
+                        
+                    default:
+                        nextBtn.disabled = false;
+                }
+            }
+        }
+
+        // Event listeners for real-time validation
+        document.getElementById('fullName').addEventListener('input', updateNavigationButtons);
+        document.getElementById('cpf').addEventListener('input', updateNavigationButtons);
+
+        // Initialize
+        updateNavigationButtons();
+    </script>
+</body>
+</html>
+
